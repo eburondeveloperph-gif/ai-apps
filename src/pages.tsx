@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Card, Input, TextArea, Button } from './components/ui';
-import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal, CheckSquare, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Card, Input, TextArea, Button, Modal } from './components/ui';
+import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal, CheckSquare, Trash2, Bell, Users, Cpu, Brain, Server, Search } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 export const TranslatorPage = () => (
@@ -225,13 +225,35 @@ export const ChatbotPage = () => {
 };
 
 export const TasksPage = () => {
-  const [tasks, setTasks] = useState<{id: number, text: string, completed: boolean}[]>([]);
+  const [tasks, setTasks] = useState<{id: number, text: string, completed: boolean, dueDate?: string}[]>([]);
   const [input, setInput] = useState('');
+  const [dueDate, setDueDate] = useState('');
+
+  useEffect(() => {
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toISOString();
+      tasks.forEach(task => {
+        if (task.dueDate && task.dueDate <= now && !task.completed) {
+          new Notification('Task Reminder', { body: `Task "${task.text}" is due!` });
+          // Prevent multiple notifications for the same task
+          setTasks(prev => prev.map(t => t.id === task.id ? {...t, dueDate: undefined} : t));
+        }
+      });
+    }, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [tasks]);
 
   const addTask = () => {
     if (!input.trim()) return;
-    setTasks([...tasks, {id: Date.now(), text: input, completed: false}]);
+    setTasks([...tasks, {id: Date.now(), text: input, completed: false, dueDate: dueDate || undefined}]);
     setInput('');
+    setDueDate('');
   };
 
   const toggleTask = (id: number) => {
@@ -248,6 +270,7 @@ export const TasksPage = () => {
         <h2 className="text-xl font-semibold mb-4">Tasks</h2>
         <div className="flex gap-2 mb-6">
           <Input placeholder="Add a new task..." value={input} onChange={(e: any) => setInput(e.target.value)} onKeyPress={(e: any) => e.key === 'Enter' && addTask()} />
+          <Input type="datetime-local" value={dueDate} onChange={(e: any) => setDueDate(e.target.value)} className="w-40" />
           <Button onClick={addTask}><Plus size={18} /></Button>
         </div>
         <div className="space-y-2 flex-1 overflow-y-auto">
@@ -256,7 +279,10 @@ export const TasksPage = () => {
               <button onClick={() => toggleTask(task.id)} className={`w-6 h-6 rounded border flex items-center justify-center ${task.completed ? 'bg-green-600 border-green-600' : 'border-gray-500'}`}>
                 {task.completed && <CheckSquare size={16} />}
               </button>
-              <span className={`flex-1 ${task.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>{task.text}</span>
+              <div className="flex-1">
+                <span className={`block ${task.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>{task.text}</span>
+                {task.dueDate && <span className="text-xs text-blue-400 flex items-center gap-1"><Bell size={10} /> {new Date(task.dueDate).toLocaleString()}</span>}
+              </div>
               <button onClick={() => deleteTask(task.id)} className="text-red-400 hover:text-red-300"><Trash2 size={18} /></button>
             </div>
           ))}
@@ -376,20 +402,86 @@ export const CodemaxPage = () => (
   </div>
 );
 
-export const ToolsPage = () => (
-  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-    {[
-      { name: 'JSON Formatter', icon: Code2 },
-      { name: 'Regex Tester', icon: Activity },
-      { name: 'Base64 Encode', icon: FileAudio },
-      { name: 'Color Picker', icon: Presentation },
-      { name: 'Hash Generator', icon: Network },
-      { name: 'Diff Viewer', icon: MessagesSquare },
-    ].map((tool, i) => (
-      <Card key={i} className="flex flex-col items-center justify-center p-4 md:p-8 hover:bg-[#3a3a3c] transition-colors cursor-pointer group">
-        <tool.icon className="w-8 h-8 md:w-10 md:h-10 text-gray-400 mb-3 md:mb-4 group-hover:text-white transition-colors" />
-        <h3 className="font-medium text-center text-sm md:text-base">{tool.name}</h3>
+export const ToolsPage = () => {
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [keys, setKeys] = useState({ zapier: '', make: '', rapidapi: '' });
+  const [toolSearchQuery, setToolSearchQuery] = useState('');
+
+  useEffect(() => {
+    fetch('/api/keys').then(res => res.json()).then(setKeys);
+  }, []);
+
+  const saveKeys = async () => {
+    await fetch('/api/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(keys)
+    });
+    alert('Keys saved!');
+  };
+
+  const tools = [
+    { name: 'JSON Formatter', icon: Code2 },
+    { name: 'Regex Tester', icon: Activity },
+    { name: 'Base64 Encode', icon: FileAudio },
+    { name: 'Color Picker', icon: Presentation },
+    { name: 'Hash Generator', icon: Network },
+    { name: 'Diff Viewer', icon: MessagesSquare },
+    { name: 'Social Connect', icon: Users },
+    { name: 'MCP', icon: Cpu },
+    { name: 'LLM Models', icon: Brain },
+    { name: 'Services', icon: Server },
+  ];
+
+  const filteredTools = tools.filter(tool => 
+    tool.name.toLowerCase().includes(toolSearchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-8">
+      <div className="relative w-full max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+        <Input 
+          placeholder="Search tools..." 
+          value={toolSearchQuery} 
+          onChange={(e: any) => setToolSearchQuery(e.target.value)} 
+          className="pl-10"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        {filteredTools.map((tool, i) => (
+          <Card key={i} className="flex flex-col items-center justify-center p-4 md:p-8 hover:bg-[#3a3a3c] transition-colors group relative">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setSelectedTool(tool.name); }}
+              className="absolute top-2 right-2 p-2 rounded-full hover:bg-white/10"
+            >
+              <Settings size={16} className="text-gray-400 hover:text-white" />
+            </button>
+            <tool.icon className="w-8 h-8 md:w-10 md:h-10 text-gray-400 mb-3 md:mb-4 group-hover:text-white transition-colors" />
+            <h3 className="font-medium text-center text-sm md:text-base">{tool.name}</h3>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <h3 className="font-medium text-lg mb-4">API Keys Management</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <Input placeholder="Zapier API Key" value={keys.zapier} onChange={(e: any) => setKeys({...keys, zapier: e.target.value})} />
+          <Input placeholder="Make API Key" value={keys.make} onChange={(e: any) => setKeys({...keys, make: e.target.value})} />
+          <Input placeholder="RapidAPI Key" value={keys.rapidapi} onChange={(e: any) => setKeys({...keys, rapidapi: e.target.value})} />
+        </div>
+        <Button onClick={saveKeys}>Save API Keys</Button>
       </Card>
-    ))}
-  </div>
-);
+
+      <Modal 
+        isOpen={!!selectedTool} 
+        onClose={() => setSelectedTool(null)} 
+        title={`${selectedTool} Settings`}
+      >
+        <p className="text-gray-400 mb-4">Configure settings for {selectedTool} here.</p>
+        <Button className="w-full">Save Changes</Button>
+      </Modal>
+    </div>
+  );
+};

@@ -26,3 +26,18 @@ export const Button = ({ children, variant = 'primary', className = '', ...props
     </button>
   );
 };
+
+export const Modal = ({ isOpen, onClose, title, children }: any) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#2c2c2e] rounded-2xl p-6 border border-white/10 w-full max-w-md shadow-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <Button variant="secondary" onClick={onClose} className="!p-2 rounded-full">X</Button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
