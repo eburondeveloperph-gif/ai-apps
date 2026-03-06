@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Input, TextArea, Button } from './components/ui';
-import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal } from 'lucide-react';
+import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal, CheckSquare, Trash2 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 export const TranslatorPage = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full min-h-[500px]">
@@ -163,26 +164,107 @@ export const TTSShowcasePage = () => (
   </div>
 );
 
-export const ChatbotPage = () => (
-  <div className="max-w-3xl mx-auto h-full min-h-[500px] flex flex-col w-full">
-    <Card className="flex-1 flex flex-col">
-      <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 p-2 md:p-4">
-        <div className="flex gap-3 md:gap-4">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0"><Bot size={16} /></div>
-          <div className="bg-[#1c1c1e] p-3 md:p-4 rounded-2xl rounded-tl-sm text-sm md:text-base text-gray-200">Hello! I'm your AI assistant. How can I help you today?</div>
+export const ChatbotPage = () => {
+  const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string}[]>([
+    {role: 'bot', text: "Hello! I'm your AI assistant. How can I help you today?"}
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const sendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+    
+    const userMessage = input;
+    setMessages(prev => [...prev, {role: 'user', text: userMessage}]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: userMessage,
+      });
+      setMessages(prev => [...prev, {role: 'bot', text: response.text || "No response."}]);
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, {role: 'bot', text: "Sorry, I encountered an error."}]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto h-full min-h-[500px] flex flex-col w-full">
+      <Card className="flex-1 flex flex-col">
+        <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 p-2 md:p-4">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'bot' ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                {msg.role === 'bot' ? <Bot size={16} /> : 'U'}
+              </div>
+              <div className={`p-3 md:p-4 rounded-2xl text-sm md:text-base ${msg.role === 'bot' ? 'bg-[#1c1c1e] rounded-tl-sm text-gray-200' : 'bg-blue-600 rounded-tr-sm text-white'}`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isLoading && <div className="text-gray-500 text-sm p-4">Assistant is thinking...</div>}
         </div>
-        <div className="flex gap-3 md:gap-4 flex-row-reverse">
-          <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center shrink-0">U</div>
-          <div className="bg-blue-600 p-3 md:p-4 rounded-2xl rounded-tr-sm text-sm md:text-base text-white">Can you help me write a function?</div>
+        <div className="mt-4 pt-4 border-t border-white/10 flex gap-2">
+          <Input 
+            placeholder="Message Chatbot..." 
+            value={input}
+            onChange={(e: any) => setInput(e.target.value)}
+            onKeyPress={(e: any) => e.key === 'Enter' && sendMessage()}
+          />
+          <Button onClick={sendMessage} disabled={isLoading}><Send size={18} /></Button>
         </div>
-      </div>
-      <div className="mt-4 pt-4 border-t border-white/10 flex gap-2">
-        <Input placeholder="Message Chatbot..." />
-        <Button><Send size={18} /></Button>
-      </div>
-    </Card>
-  </div>
-);
+      </Card>
+    </div>
+  );
+};
+
+export const TasksPage = () => {
+  const [tasks, setTasks] = useState<{id: number, text: string, completed: boolean}[]>([]);
+  const [input, setInput] = useState('');
+
+  const addTask = () => {
+    if (!input.trim()) return;
+    setTasks([...tasks, {id: Date.now(), text: input, completed: false}]);
+    setInput('');
+  };
+
+  const toggleTask = (id: number) => {
+    setTasks(tasks.map(t => t.id === id ? {...t, completed: !t.completed} : t));
+  };
+
+  const deleteTask = (id: number) => {
+    setTasks(tasks.filter(t => t.id !== id));
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto h-full flex flex-col w-full">
+      <Card className="flex-1 flex flex-col">
+        <h2 className="text-xl font-semibold mb-4">Tasks</h2>
+        <div className="flex gap-2 mb-6">
+          <Input placeholder="Add a new task..." value={input} onChange={(e: any) => setInput(e.target.value)} onKeyPress={(e: any) => e.key === 'Enter' && addTask()} />
+          <Button onClick={addTask}><Plus size={18} /></Button>
+        </div>
+        <div className="space-y-2 flex-1 overflow-y-auto">
+          {tasks.map(task => (
+            <div key={task.id} className="flex items-center gap-3 p-3 bg-[#1c1c1e] rounded-lg border border-white/5">
+              <button onClick={() => toggleTask(task.id)} className={`w-6 h-6 rounded border flex items-center justify-center ${task.completed ? 'bg-green-600 border-green-600' : 'border-gray-500'}`}>
+                {task.completed && <CheckSquare size={16} />}
+              </button>
+              <span className={`flex-1 ${task.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>{task.text}</span>
+              <button onClick={() => deleteTask(task.id)} className="text-red-400 hover:text-red-300"><Trash2 size={18} /></button>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
 
 export const AgentsPage = () => (
   <div className="flex flex-col gap-4 md:gap-6 h-full">
