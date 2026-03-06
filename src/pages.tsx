@@ -451,7 +451,11 @@ export const ToolsPage = () => {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         {filteredTools.map((tool, i) => (
-          <Card key={i} className="flex flex-col items-center justify-center p-4 md:p-8 hover:bg-[#3a3a3c] transition-colors group relative">
+          <Card 
+            key={i} 
+            className="flex flex-col items-center justify-center p-4 md:p-8 hover:bg-[#3a3a3c] transition-colors group relative cursor-pointer"
+            onClick={() => setSelectedTool(tool.name)}
+          >
             <button 
               onClick={(e) => { e.stopPropagation(); setSelectedTool(tool.name); }}
               className="absolute top-2 right-2 p-2 rounded-full hover:bg-white/10"
