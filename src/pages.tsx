@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, Input, TextArea, Button, Modal } from './components/ui';
 import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal, CheckSquare, Trash2, Bell, Users, Cpu, Brain, Server, Search, Pause, StopCircle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { JsonFormatter } from './components/tools/JsonFormatter';
+import { Base64Encoder } from './components/tools/Base64Encoder';
+import { RegexTester } from './components/tools/RegexTester';
 
 export const TranslatorPage = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full min-h-[500px]">
@@ -646,7 +649,13 @@ export const ToolsPage = () => {
         onClose={() => setSelectedTool(null)} 
         title={`${selectedTool} Settings`}
       >
-        {['MCP', 'Huggingface', 'LLM Models', 'Services'].includes(selectedTool || '') ? (
+        {selectedTool === 'JSON Formatter' ? (
+          <JsonFormatter />
+        ) : selectedTool === 'Base64 Encode' ? (
+          <Base64Encoder />
+        ) : selectedTool === 'Regex Tester' ? (
+          <RegexTester />
+        ) : ['MCP', 'Huggingface', 'LLM Models', 'Services'].includes(selectedTool || '') ? (
           <div className="space-y-4">
             <Input placeholder={`${selectedTool} API Key/Token`} />
             <Button className="w-full">Save Token</Button>
