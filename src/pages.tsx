@@ -593,6 +593,7 @@ export const ToolsPage = () => {
     { name: 'MCP', icon: Cpu },
     { name: 'LLM Models', icon: Brain },
     { name: 'Services', icon: Server },
+    { name: 'Huggingface', icon: Bot },
   ];
 
   const filteredTools = tools.filter(tool => 
@@ -645,8 +646,17 @@ export const ToolsPage = () => {
         onClose={() => setSelectedTool(null)} 
         title={`${selectedTool} Settings`}
       >
-        <p className="text-gray-400 mb-4">Configure settings for {selectedTool} here.</p>
-        <Button className="w-full">Save Changes</Button>
+        {['MCP', 'Huggingface', 'LLM Models', 'Services'].includes(selectedTool || '') ? (
+          <div className="space-y-4">
+            <Input placeholder={`${selectedTool} API Key/Token`} />
+            <Button className="w-full">Save Token</Button>
+          </div>
+        ) : (
+          <>
+            <p className="text-gray-400 mb-4">Configure settings for {selectedTool} here.</p>
+            <Button className="w-full">Save Changes</Button>
+          </>
+        )}
       </Modal>
     </div>
   );
