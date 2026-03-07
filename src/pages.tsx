@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Input, TextArea, Button, Modal } from './components/ui';
-import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal, CheckSquare, Trash2, Bell, Users, Cpu, Brain, Server, Search } from 'lucide-react';
+import { Play, Mic, Upload, Settings, Send, Plus, Video, MessageSquare, Activity, FileAudio, Presentation, Network, MessagesSquare, Code2, Bot, MicVocal, CheckSquare, Trash2, Bell, Users, Cpu, Brain, Server, Search, Pause, StopCircle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 export const TranslatorPage = () => (
@@ -138,31 +138,64 @@ export const CloneVoicePage = () => (
   </div>
 );
 
-export const TTSShowcasePage = () => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-full min-h-[500px]">
-    <Card className="md:col-span-2 flex flex-col min-h-[300px]">
-      <TextArea className="flex-1 text-base md:text-lg mb-4" placeholder="Enter text to synthesize..." defaultValue="Hello, this is a demonstration of the Text-to-Speech capabilities." />
-      <div className="flex justify-end">
-        <Button className="w-full sm:w-32"><Play size={18} /> Generate</Button>
-      </div>
-    </Card>
-    <Card className="flex flex-col gap-4">
-      <h3 className="font-medium">Voice Settings</h3>
-      <div>
-        <label className="text-sm text-gray-400 mb-1 block">Voice Model</label>
-        <select className="bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm md:text-base text-white w-full"><option>Nova (Female)</option><option>Echo (Male)</option></select>
-      </div>
-      <div>
-        <label className="text-sm text-gray-400 mb-1 block">Speed (1.0x)</label>
-        <input type="range" className="w-full accent-blue-500" min="0.5" max="2" step="0.1" defaultValue="1" />
-      </div>
-      <div>
-        <label className="text-sm text-gray-400 mb-1 block">Pitch</label>
-        <input type="range" className="w-full accent-blue-500" min="-10" max="10" defaultValue="0" />
-      </div>
-    </Card>
-  </div>
-);
+export const TTSShowcasePage = () => {
+  const voices = [
+    { name: 'Nova (Female)', id: 'nova', preview: 'https://example.com/nova.mp3' },
+    { name: 'Echo (Male)', id: 'echo', preview: 'https://example.com/echo.mp3' },
+    { name: 'Alloy (Neutral)', id: 'alloy', preview: 'https://example.com/alloy.mp3' },
+    { name: 'Fable (Male)', id: 'fable', preview: 'https://example.com/fable.mp3' },
+    { name: 'Onyx (Male)', id: 'onyx', preview: 'https://example.com/onyx.mp3' },
+    { name: 'Shimmer (Female)', id: 'shimmer', preview: 'https://example.com/shimmer.mp3' },
+  ];
+
+  const [selectedVoice, setSelectedVoice] = useState(voices[0].id);
+
+  const playPreview = (url: string) => {
+    const audio = new Audio(url);
+    audio.play().catch(e => console.error("Preview playback failed:", e));
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-full min-h-[500px]">
+      <Card className="md:col-span-2 flex flex-col min-h-[300px]">
+        <TextArea className="flex-1 text-base md:text-lg mb-4" placeholder="Enter text to synthesize..." defaultValue="Hello, this is a demonstration of the Text-to-Speech capabilities." />
+        <div className="flex justify-end">
+          <Button className="w-full sm:w-32"><Play size={18} /> Generate</Button>
+        </div>
+      </Card>
+      <Card className="flex flex-col gap-4">
+        <h3 className="font-medium">Voice Settings</h3>
+        <div>
+          <label className="text-sm text-gray-400 mb-1 block">Voice Model</label>
+          <div className="flex gap-2">
+            <select 
+              className="bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm md:text-base text-white w-full"
+              value={selectedVoice}
+              onChange={(e) => setSelectedVoice(e.target.value)}
+            >
+              {voices.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+            <Button 
+              variant="secondary" 
+              className="!p-2" 
+              onClick={() => playPreview(voices.find(v => v.id === selectedVoice)?.preview || '')}
+            >
+              <Play size={18} />
+            </Button>
+          </div>
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 mb-1 block">Speed (1.0x)</label>
+          <input type="range" className="w-full accent-blue-500" min="0.5" max="2" step="0.1" defaultValue="1" />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 mb-1 block">Pitch</label>
+          <input type="range" className="w-full accent-blue-500" min="-10" max="10" defaultValue="0" />
+        </div>
+      </Card>
+    </div>
+  );
+};
 
 export const ChatbotPage = () => {
   const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string}[]>([
@@ -250,8 +283,11 @@ export const TasksPage = () => {
   }, [tasks]);
 
   const addTask = () => {
-    if (!input.trim()) return;
-    setTasks([...tasks, {id: Date.now(), text: input, completed: false, dueDate: dueDate || undefined}]);
+    if (!input.trim()) {
+      alert('Please enter a task description.');
+      return;
+    }
+    setTasks([...tasks, {id: Date.now(), text: input.trim(), completed: false, dueDate: dueDate || undefined}]);
     setInput('');
     setDueDate('');
   };
@@ -292,30 +328,129 @@ export const TasksPage = () => {
   );
 };
 
-export const AgentsPage = () => (
-  <div className="flex flex-col gap-4 md:gap-6 h-full">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl md:text-2xl font-semibold">Active Agents</h2>
-      <Button className="text-sm md:text-base"><Plus size={18} /> <span className="hidden sm:inline">Create Agent</span></Button>
+export const AgentsPage = () => {
+  const [logs, setLogs] = useState<Record<string, string[]>>({});
+  const [activeLogAgent, setActiveLogAgent] = useState<string | null>(null);
+  const [eventSources, setEventSources] = useState<Record<string, EventSource>>({});
+
+  const toggleLogs = (agentId: string) => {
+    if (activeLogAgent === agentId) {
+      setActiveLogAgent(null);
+      if (eventSources[agentId]) {
+        eventSources[agentId].close();
+        setEventSources(prev => {
+          const next = { ...prev };
+          delete next[agentId];
+          return next;
+        });
+      }
+    } else {
+      setActiveLogAgent(agentId);
+      if (!eventSources[agentId]) {
+        const eventSource = new EventSource(`/api/agents/${agentId}/logs`);
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          setLogs(prev => ({
+            ...prev,
+            [agentId]: [...(prev[agentId] || []), data.message]
+          }));
+        };
+        setEventSources(prev => ({ ...prev, [agentId]: eventSource }));
+      }
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(eventSources).forEach(es => es.close());
+    };
+  }, [eventSources]);
+
+  return (
+    <div className="flex flex-col gap-4 md:gap-6 h-full">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl md:text-2xl font-semibold">Active Agents</h2>
+        <Button className="text-sm md:text-base"><Plus size={18} /> <span className="hidden sm:inline">Create Agent</span></Button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {['Research Agent', 'Coding Assistant', 'Data Analyst'].map((name, i) => {
+          const agentId = name.toLowerCase().replace(' ', '-');
+          return (
+            <Card key={i} className="flex flex-col group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg h-full">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><Bot size={20} /></div>
+                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Active</span>
+              </div>
+              <h3 className="font-medium text-lg mb-1">{name}</h3>
+              <p className="text-sm text-gray-400 mb-4 flex-1">Autonomous agent configured for specific tasks and workflows.</p>
+              
+              {activeLogAgent === agentId ? (
+                <div className="mb-4 bg-black p-2 rounded text-xs font-mono h-32 overflow-y-auto">
+                  {(logs[agentId] || []).map((log, idx) => <div key={idx}>{log}</div>)}
+                </div>
+              ) : null}
+
+              <div className="relative h-9">
+                <div className="absolute inset-0 flex gap-2 opacity-100 group-hover:opacity-0 transition-opacity">
+                  <Button variant="secondary" className="flex-1 text-xs md:text-sm py-1.5">Configure</Button>
+                  <Button variant="secondary" className="flex-1 text-xs md:text-sm py-1.5" onClick={() => toggleLogs(agentId)}>Logs</Button>
+                </div>
+                <div className="absolute inset-0 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="secondary" className="flex-1 text-xs md:text-sm py-1.5"><Pause size={14} className="mr-1" /> Pause</Button>
+                  <Button variant="secondary" className="flex-1 text-xs md:text-sm py-1.5 text-red-400 hover:text-red-300"><StopCircle size={14} className="mr-1" /> Stop</Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-      {['Research Agent', 'Coding Assistant', 'Data Analyst'].map((name, i) => (
-        <Card key={i} className="flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><Bot size={20} /></div>
-            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Active</span>
-          </div>
-          <h3 className="font-medium text-lg mb-1">{name}</h3>
-          <p className="text-sm text-gray-400 mb-4 flex-1">Autonomous agent configured for specific tasks and workflows.</p>
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1 text-xs md:text-sm py-1.5">Configure</Button>
-            <Button variant="secondary" className="flex-1 text-xs md:text-sm py-1.5">Logs</Button>
-          </div>
-        </Card>
-      ))}
+  );
+};
+
+export const MMMPage = () => {
+  const ideas = [
+    "Vertical AI customer support agent",
+    "AI voice receptionist / appointment setter",
+    "AI lead capture and qualification bot",
+    "AI outbound personalization + follow-up engine",
+    "Internal team copilot for Slack / CRM / tickets / docs",
+    "Meeting summary + CRM update + action-item agent",
+    "Content operations agency-in-a-box",
+    "Programmatic SEO page factory",
+    "Local SEO + review-response autopilot",
+    "Ecommerce shopping assistant + post-purchase support bot",
+    "Knowledge-base-to-chatbot SaaS",
+    "Single-workflow subscription micro-SaaS",
+    "Paid niche newsletter",
+    "Newsletter-as-a-service for founders and brands",
+    "Digital product store: templates, prompts, SOPs, toolkits, mini-courses",
+    "Creator repurposing engine",
+    "Self-service calculators, quote tools, and audit bots",
+    "Churn recovery / reactivation automation",
+    "Agent setup + maintenance retainers for SMBs",
+    "Hybrid agency + SaaS wedge"
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto h-full w-full">
+      <Card className="h-full flex flex-col">
+        <h2 className="text-2xl font-semibold mb-6">Money Making Machine (MMM) Ideas</h2>
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {ideas.map((idea, i) => (
+            <div key={i} className="p-4 bg-[#1c1c1e] rounded-xl border border-white/5 flex items-center gap-4">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold shrink-0">
+                {i + 1}
+              </div>
+              <p className="text-gray-200">{idea}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
-  </div>
-);
+  );
+};
 
 export const CSRPage = () => (
   <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 h-full min-h-[600px]">
@@ -359,48 +494,75 @@ export const CSRPage = () => (
   </div>
 );
 
-export const CodemaxPage = () => (
-  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 h-full min-h-[600px]">
-    <Card className="hidden lg:flex lg:col-span-1 flex-col p-0 overflow-hidden">
-      <div className="p-3 md:p-4 border-b border-white/10 font-medium text-sm text-gray-400">Explorer</div>
-      <div className="p-2 space-y-1 text-sm">
-        <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-gray-300">src/</div>
-        <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-blue-400 bg-blue-500/10 ml-4">main.tsx</div>
-        <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-gray-300 ml-4">App.tsx</div>
-        <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-gray-300 ml-4">index.css</div>
+export const CodemaxPage = () => {
+  const [html, setHtml] = useState(localStorage.getItem('codemax_html') || '<h1>Hello World</h1>');
+  const [css, setCss] = useState(localStorage.getItem('codemax_css') || 'h1 { color: blue; }');
+  
+  // Debounced state for preview
+  const [debouncedHtml, setDebouncedHtml] = useState(html);
+  const [debouncedCss, setDebouncedCss] = useState(css);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedHtml(html);
+      setDebouncedCss(css);
+      localStorage.setItem('codemax_html', html);
+      localStorage.setItem('codemax_css', css);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(handler);
+  }, [html, css]);
+
+  const previewContent = `
+    <html>
+      <head>
+        <style>${debouncedCss}</style>
+      </head>
+      <body>${debouncedHtml}</body>
+    </html>
+  `;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 h-full min-h-[600px]">
+      <Card className="hidden lg:flex lg:col-span-1 flex-col p-0 overflow-hidden">
+        <div className="p-3 md:p-4 border-b border-white/10 font-medium text-sm text-gray-400">Explorer</div>
+        <div className="p-2 space-y-1 text-sm">
+          <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-gray-300">src/</div>
+          <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-blue-400 bg-blue-500/10 ml-4">index.html</div>
+          <div className="px-2 py-1 hover:bg-white/5 rounded cursor-pointer text-gray-300 ml-4">style.css</div>
+        </div>
+      </Card>
+      <div className="lg:col-span-3 flex flex-col gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+          <Card className="p-0 overflow-hidden flex flex-col">
+            <div className="p-2 border-b border-white/10 font-medium text-xs text-gray-400 bg-[#1c1c1e]">index.html</div>
+            <textarea
+              className="flex-1 p-3 font-mono text-xs text-gray-300 bg-transparent border-none outline-none resize-none"
+              value={html}
+              onChange={(e) => setHtml(e.target.value)}
+            />
+          </Card>
+          <Card className="p-0 overflow-hidden flex flex-col">
+            <div className="p-2 border-b border-white/10 font-medium text-xs text-gray-400 bg-[#1c1c1e]">style.css</div>
+            <textarea
+              className="flex-1 p-3 font-mono text-xs text-gray-300 bg-transparent border-none outline-none resize-none"
+              value={css}
+              onChange={(e) => setCss(e.target.value)}
+            />
+          </Card>
+        </div>
+        <Card className="h-64 p-0 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-white/10 font-medium text-xs text-gray-400 bg-[#1c1c1e]">Preview</div>
+          <iframe
+            className="flex-1 w-full h-full bg-white"
+            srcDoc={previewContent}
+            title="preview"
+          />
+        </Card>
       </div>
-    </Card>
-    <div className="lg:col-span-3 flex flex-col gap-4 md:gap-6">
-      <Card className="flex-1 p-0 overflow-hidden flex flex-col min-h-[300px]">
-        <div className="flex bg-[#1c1c1e] border-b border-white/10 overflow-x-auto">
-          <div className="px-3 md:px-4 py-2 bg-[#2c2c2e] text-xs md:text-sm text-blue-400 border-t-2 border-blue-500 whitespace-nowrap">main.tsx</div>
-        </div>
-        <div className="flex-1 p-3 md:p-4 font-mono text-xs md:text-sm text-gray-300 overflow-auto whitespace-pre">
-          <span className="text-purple-400">import</span> {'{'} StrictMode {'}'} <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;{'\n'}
-          <span className="text-purple-400">import</span> {'{'} createRoot {'}'} <span className="text-purple-400">from</span> <span className="text-green-400">'react-dom/client'</span>;{'\n'}
-          {'\n'}
-          createRoot(document.getElementById(<span className="text-green-400">'root'</span>)!).render({'\n'}
-          {'  '}&lt;<span className="text-blue-400">StrictMode</span>&gt;{'\n'}
-          {'    '}&lt;<span className="text-blue-400">App</span> /&gt;{'\n'}
-          {'  '}&lt;/<span className="text-blue-400">StrictMode</span>&gt;{'\n'}
-          );
-        </div>
-      </Card>
-      <Card className="h-40 md:h-48 p-0 overflow-hidden flex flex-col">
-        <div className="p-2 border-b border-white/10 font-medium text-xs md:text-sm text-gray-400 bg-[#1c1c1e] flex gap-4">
-          <span className="text-white border-b border-white pb-1">Terminal</span>
-          <span>Output</span>
-        </div>
-        <div className="flex-1 p-3 md:p-4 font-mono text-xs md:text-sm text-gray-400 bg-black overflow-auto whitespace-pre">
-          $ npm run dev{'\n'}
-          <span className="text-green-400">VITE v6.0.0</span> ready in 250 ms{'\n'}
-          {'\n'}
-          ➜  Local:   http://localhost:3000/{'\n'}
-        </div>
-      </Card>
     </div>
-  </div>
-);
+  );
+};
 
 export const ToolsPage = () => {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -453,7 +615,7 @@ export const ToolsPage = () => {
         {filteredTools.map((tool, i) => (
           <Card 
             key={i} 
-            className="flex flex-col items-center justify-center p-4 md:p-8 hover:bg-[#3a3a3c] transition-colors group relative cursor-pointer"
+            className={`flex flex-col items-center justify-center p-4 md:p-8 hover:bg-[#3a3a3c] transition-colors group relative cursor-pointer ${selectedTool === tool.name ? 'ring-2 ring-white bg-[#3a3a3c]' : ''}`}
             onClick={() => setSelectedTool(tool.name)}
           >
             <button 

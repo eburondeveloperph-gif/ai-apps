@@ -14,13 +14,14 @@ import {
   Wrench,
   ChevronLeft,
   Search,
-  CheckSquare
+  CheckSquare,
+  DollarSign
 } from 'lucide-react';
 
 import {
   TranslatorPage, DualTranslatePage, ClassroomPage, DubberPage,
   TranscriberPage, CloneVoicePage, TTSShowcasePage, ChatbotPage,
-  AgentsPage, CSRPage, CodemaxPage, ToolsPage, TasksPage
+  AgentsPage, CSRPage, CodemaxPage, ToolsPage, TasksPage, MMMPage
 } from './pages';
 
 const apps = [
@@ -34,33 +35,78 @@ const apps = [
   { id: 'chatbot', name: 'Chatbot', icon: Bot, color: '#1f7d73', component: ChatbotPage },
   { id: 'tasks', name: 'Tasks', icon: CheckSquare, color: '#27c93f', component: TasksPage },
   { id: 'agents', name: 'Agents', icon: Network, color: '#8a288a', component: AgentsPage },
+  { id: 'mmm', name: 'MMM', icon: DollarSign, color: '#27c93f', component: MMMPage },
   { id: 'csr', name: 'CSR', icon: Headset, color: '#1871e8', component: CSRPage },
   { id: 'codemax', name: 'Codemax', icon: Code2, color: '#283c4f', component: CodemaxPage },
   { id: 'tools', name: 'Tools', icon: Wrench, color: '#a65928', component: ToolsPage },
 ];
 
-const AppLayout = ({ title, onBack, children }: any) => (
-  <div className="flex h-screen w-full flex-col bg-[#1c1c1e] text-white font-sans overflow-hidden">
-    {/* Title bar */}
-    <div className="flex items-center px-4 py-3 border-b border-white/10 bg-[#2c2c2e]">
-      <div className="flex space-x-2 w-16">
-        <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-        <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-        <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+const AppLayout = ({ title, onBack, children, searchQuery, setSearchQuery, apps, setActiveAppId }: any) => {
+  const [showResults, setShowResults] = useState(false);
+  const filteredApps = apps.filter((app: any) => 
+    app.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="flex h-screen w-full flex-col bg-[#1c1c1e] text-white font-sans overflow-hidden">
+      {/* Title bar */}
+      <div className="flex items-center px-4 py-3 border-b border-white/10 bg-[#2c2c2e] justify-between">
+        <div className="flex items-center">
+          <div className="flex space-x-2 w-16">
+            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+            <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+          </div>
+          <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white transition-colors mr-4 bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg">
+            <ChevronLeft size={18} />
+            <span className="text-sm font-medium ml-1">Back</span>
+          </button>
+          <div className="text-sm font-medium text-gray-200">{title}</div>
+        </div>
+        
+        {/* Global Search */}
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+          <input 
+            type="text"
+            placeholder="Search apps..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => setShowResults(true)}
+            onBlur={() => setTimeout(() => setShowResults(false), 200)}
+            className="w-full bg-[#1c1c1e] border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {showResults && searchQuery && (
+            <div className="absolute top-full right-0 mt-2 w-64 bg-[#2c2c2e] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
+              {filteredApps.map((app: any) => (
+                <button
+                  key={app.id}
+                  onClick={() => {
+                    setActiveAppId(app.id);
+                    setSearchQuery('');
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-white/5 text-sm flex items-center gap-2"
+                >
+                  <app.icon size={16} style={{ color: app.color }} />
+                  {app.name}
+                </button>
+              ))}
+              {filteredApps.length === 0 && <div className="px-4 py-2 text-sm text-gray-500">No apps found</div>}
+            </div>
+          )}
+        </div>
       </div>
-      <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white transition-colors mr-4 bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg">
-        <ChevronLeft size={18} />
-        <span className="text-sm font-medium ml-1">Back</span>
-      </button>
-      <div className="text-sm font-medium text-gray-200">{title}</div>
-    </div>
-    <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto w-full h-full">
-        {children}
+      <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto w-full h-full">
+          {children}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function App() {
   const [activeAppId, setActiveAppId] = useState<string | null>(null);
@@ -75,7 +121,14 @@ export default function App() {
   if (activeApp) {
     const ActiveComponent = activeApp.component;
     return (
-      <AppLayout title={activeApp.name} onBack={() => setActiveAppId(null)}>
+      <AppLayout 
+        title={activeApp.name} 
+        onBack={() => setActiveAppId(null)}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        apps={apps}
+        setActiveAppId={setActiveAppId}
+      >
         <ActiveComponent />
       </AppLayout>
     );
